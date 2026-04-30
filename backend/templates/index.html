@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OCR Ingredient Scanner</title>
+  <style>
+    #loading { display: none; font-weight: bold; color: blue; }
+    #preview { max-width: 100%; height: auto; display: none; margin-top: 20px; }
+    #canvas { border: 1px solid black; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+  <h1>Upload or Capture Image</h1>
+
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="image" accept="image/*" capture="environment" required onchange="previewImage(event)" />
+    <button type="submit">📤 Upload & Scan</button>
+  </form>
+
+  <img id="preview" src="" alt="Image Preview">
+
+  <hr>
+
+  <h2>OR Use Live Camera (Desktop only)</h2>
+  <video id="video" width="400" height="300" autoplay playsinline muted></video>
+  <canvas id="canvas" width="400" height="300" style="display: none;"></canvas>
+  <br>
+  <button onclick="captureImage()">📸 Capture from Webcam</button>
+  <p id="ocrText">No scan yet.</p>
+  <p id="loading">Scanning... Please wait.</p>
+
+  <form id="preferencesForm">
+    <h3>User Preferences</h3>
+    <label>Allergies:</label><br>
+    <input type="text" name="allergies" placeholder="e.g., peanuts, soy"><br><br>
+
+    <label>Diet Type:</label><br>
+    <select name="diet">
+      <option value="none">None</option>
+      <option value="vegan">Vegan</option>
+      <option value="keto">Keto</option>
+      <option value="low sugar">Low Sugar</option>
+    </select><br><br>
+
+    <label>Health Conditions:</label><br>
+    <input type="text" name="conditions" placeholder="e.g., diabetes"><br><br>
+
+    <!-- 🔘 Add a button to manually trigger analysis if needed -->
+    <button type="button" onclick="analyzeData()">🔎 Analyze Nutrition</button>
+  </form>
+
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const ocrText = document.getElementById('ocrText');
+const loading = document.getElementById('loading');
+const preview = document.getElementById('preview');
+
+let extractedData = null; // store uploaded data for later use
+
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+  .then(stream => {
+    video.srcObject = stream;
+    video.onloadedmetadata = () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      video.play();
+    };
+  }).catch(err => {
+    console.error('🚫 Error accessing webcam:', err);
+    alert('Could not access camera.');
+  });
+
+function previewImage(event) {
+  const file = event.target.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    canvas.style.display = 'none'; // ⛔ hide canvas
+  };
+  reader.readAsDataURL(file);
+}
+
+// Handle upload form submit
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+  loading.style.display = 'block';
+  canvas.style.display = 'none';
+
+  fetch('/upload', {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+  loading.style.display = 'none';
+  console.log("📥 OCR API response:", data);  // ✅ ADD THIS
+  extractedData = {
+    ...data,
+    cleaned_text: data.cleaned_text || "",  // <- keep this
+  };
+  ocrText.innerText = "✅ Data scanned! Now click Analyze.";
+})
+  .catch(err => {
+    loading.style.display = 'none';
+    console.error('❌ Upload error:', err);
+    ocrText.innerText = '❌ Failed to scan.';
+  });
+});
+
+function captureImage() {
+  if (!video.srcObject || video.readyState < 2) {
+    alert('⚠️ Webcam not ready.');
+    return;
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  preview.src = canvas.toDataURL('image/jpeg');
+  preview.style.display = 'block';
+  canvas.style.display = 'none';
+
+  canvas.toBlob(blob => {
+    const formData = new FormData();
+    formData.append('image', blob, 'frame.jpg');
+    loading.style.display = 'block';
+
+    fetch('/upload', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      loading.style.display = 'none';
+      extractedData = data;
+      ocrText.innerText = "✅ Data captured! Click Analyze.";
+    });
+  }, 'image/jpeg');
+}
+
+function analyzeData() {
+  if (!extractedData) {
+    alert("❌ Upload or scan something first!");
+    return;
+  }
+
+  const preferences = {
+    allergies: document.querySelector('[name="allergies"]').value || '',
+    diet: document.querySelector('[name="diet"]').value || '',
+    conditions: document.querySelector('[name="conditions"]').value || ''
+  };
+
+  const payload = {
+    ingredients: extractedData.ingredients,
+    preferences: preferences,
+    merged_text_lines: extractedData.merged_text_lines,
+    cleaned_text: extractedData.cleaned_text  // ✅ send to backend
+  };
+
+  loading.style.display = 'block';
+  console.log("📤 Sending to backend:", payload);
+
+
+  fetch('/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(result => {
+    loading.style.display = 'none';
+    console.log("🧠 AI Response:", result.message);
+
+    ocrText.innerText = result.message ? `🧾 AI Summary:\n${result.message}` : '⚠️ No response from AI.';
+  })
+  .catch(err => {
+    loading.style.display = 'none';
+    ocrText.innerText = '❌ Failed to analyze.';
+    console.error('❌ Analyze error:', err);
+  });
+}
+</script>
+</body>
+</html>
