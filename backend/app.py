@@ -13,6 +13,7 @@ import os
 from dotenv import load_dotenv
 import certifi
 import google.generativeai as genai
+import json
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 
@@ -53,6 +54,20 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # OCR & AI Setup
 # Initialize PaddleOCR
 ocr_model = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=False)
+
+# ✅ Warmup OCR to prevent first-request failure
+def warmup_ocr():
+    try:
+        dummy = np.zeros((100, 100, 3), dtype=np.uint8)
+        ocr_model.ocr(dummy, cls=True)
+        print("✅ OCR warmed up")
+    except Exception as e:
+        print("⚠️ OCR warmup (safe to ignore):", e)
+
+warmup_ocr()
+
+# Health Check
+@app.route('/')
 
 #import google.generativeai as genai
 
@@ -360,8 +375,10 @@ def upload_image():
 
 
 @app.route('/analyze', methods=['POST'])
-@jwt_required()                          # ← add this line
+@jwt_required()
 def analyze_ingredients():
+    import json
+
     current_user = get_jwt_identity()
     data = request.get_json()
 
@@ -376,22 +393,38 @@ def analyze_ingredients():
     print("🧼 Cleaned Text:", repr(cleaned_text))
     print("🙋 Preferences:", preferences)
 
+    # 🔄 Fix empty cleaned_text
     if not cleaned_text or not isinstance(cleaned_text, str) or cleaned_text.strip() == "":
-        print("⚠️ cleaned_text was empty, rebuilding from merged_text_lines")
+        print("⚠️ cleaned_text empty → rebuilding from merged_text_lines")
         cleaned_text = " ".join(nutrition_lines).lower()
 
-    if not isinstance(nutrition_lines, list) or len(nutrition_lines) == 0:
-        return jsonify({'message': '⚠️ No nutritional information found to analyze.'})
+    # 🚨 Fallback instead of returning early
+    if not nutrition_lines or len(nutrition_lines) == 0:
+        print("⚠️ No merged_text_lines → using cleaned_text fallback")
 
-    # 🔄 Fallback if ingredients are missing or just a string
-    if isinstance(ingredients, str) or not ingredients:
-        ingredients_info = cleaned_text.strip()
+        if cleaned_text:
+            nutrition_lines = [cleaned_text]
+        else:
+            return jsonify({
+                "ingredients": [],
+                "nutrition": {},
+                "summary": {
+                    "safe": "",
+                    "warning": "",
+                    "avoid": "No readable data found in image"
+                },
+                "verdict": "Caution"
+            })
+
+    # 🔹 Clean ingredient handling
+    if not ingredients:
+        ingredients_info = "No clear ingredient list found. Infer from OCR text if possible."
     elif isinstance(ingredients, list):
         ingredients_info = ", ".join(ingredients)
     else:
-        ingredients_info = "⚠️ Ingredients were not detected from the label."
+        ingredients_info = str(ingredients)
 
-    # ✅ Safely handle all preferences
+    # 🔹 Preferences
     prefs = preferences
     allergies = ", ".join(prefs.get('allergies', [])) if isinstance(prefs.get('allergies'), list) else prefs.get('allergies', 'None')
     warnings = ", ".join(prefs.get('warnings', [])) if isinstance(prefs.get('warnings'), list) else prefs.get('warnings', 'None')
@@ -401,75 +434,119 @@ def analyze_ingredients():
     region = prefs.get('region', 'None')
     sustainability = prefs.get('sustainability', 'None')
 
+    # 🔹 Limit text size (important)
+    cleaned_text = cleaned_text[:3000]
+
+    # 🔥 FINAL PROMPT (escaped JSON)
     prompt = f"""
-You are a helpful food analysis assistant.
+You are a food analysis assistant.
 
-Here is some OCR scanned nutrition and ingredient information from a food label.
+Analyze OCR text and return structured JSON.
 
-Use the following information to extract key nutritional values (per 100g/ml), ingredients, and assess the food based on user preferences (like keto, diabetes, allergies).
+--- OCR DATA ---
+Merged Text:
+{chr(10).join(nutrition_lines)}
 
-If any nutrition data (like potassium, calcium, magnesium) is missing in `merged_text_lines`, look for it in `cleaned_text`. Use both if needed to extract all important values.
+Ingredients:
+{ingredients_info}
+
+Cleaned Text:
+{cleaned_text}
+
+User Preferences:
+Allergies: {allergies}
+Diet: {diet}
+Health Goals: {healthGoal}
+Warnings: {warnings}
+Region: {region}
+Sustainability: {sustainability}
 
 ---
 
-🧾 Merged Text:
-{chr(10).join(nutrition_lines)}
+Return ONLY JSON:
 
-🧂 Ingredients:
-{ingredients_info}
+{{
+  "nutrition": {{
+    "calories": "",
+    "protein": "",
+    "carbs": "",
+    "sugar": "",
+    "fat": "",
+    "sodium": "",
+    "fiber": "",
+    "calcium": "",
+    "magnesium": "",
+    "potassium": ""
+  }},
+  "ingredients": [
+    {{
+      "name": "",
+      "status": "Good | Moderate | Risky",
+      "description": ""
+    }}
+  ],
+  "summary": {{
+    "safe": "",
+    "warning": "",
+    "avoid": ""
+  }},
+  "verdict": "Healthy | Caution | Not recommended"
+}}
 
-📋 User Preferences:
-- Allergies: {allergies or 'None'}
-- Diet: {diet}
-- Health Goals: {healthGoal}
-- Ingredient Warnings: {warnings or 'None'}
-- Region Specific: {region}
-- Sustainability: {sustainability}
-
-🧼 Cleaned OCR Text (Backup Reference):
-{cleaned_text}
-
-Make sure to extract potassium, calcium, magnesium, and sodium if they are anywhere in the text.
-
-🧠 Your Task:
-1. If data is available, summarize key nutritional facts (✅ include protein, carbs, sugars, fat, sodium, and any others like calcium, magnesium, potassium).
-2. If ingredients are present, assess them based on the user's preferences (e.g. allergies, keto, diabetes).
-3. Clearly mention if any important information is missing (like fiber, calories, ingredient list).
-4. Use `cleaned_text` to complete missing information if `merged_text_lines` seems noisy.
-5. Provide a helpful health assessment — is it healthy or not? Who should avoid it?
-6. Point out anything concerning based on the user's preferences.
-7. Say whether it's okay for:
-   - ✅ Diabetics
-   - ✅ Heart patients
-   - ✅ Weight loss diets
-8. End with a simple overall verdict:
-   - ✅ Healthy
-   - ⚠️ Caution
-   - ❌ Not recommended
-
-🗒️ Respond in short, clear bullet points.
+Rules:
+- If ingredients missing → return []
+- If nutrition missing → return ""
+- NO markdown
+- NO extra text
 """
 
     try:
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a helpful food analysis assistant."},
+                {"role": "system", "content": "You analyze food labels and return JSON."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.7
+            temperature=0.4
         )
 
-        print("🧠 Raw AI Full Response:", response)
-        ai_reply = response.choices[0].message.content
-        print("💡 Final Extracted AI Reply:", ai_reply)
+        ai_reply = response.choices[0].message.content.strip()
 
-        return jsonify({'message': ai_reply})
+        print("🧠 RAW AI:", ai_reply)
+
+        # 🔧 Remove markdown if AI adds it
+        if ai_reply.startswith("```"):
+            ai_reply = ai_reply.split("```")[1]
+
+        try:
+            parsed = json.loads(ai_reply)
+            return jsonify(parsed)
+
+        except Exception as e:
+            print("⚠️ JSON parse failed:", e)
+            return jsonify({
+                "ingredients": [],
+                "nutrition": {},
+                "summary": {
+                    "safe": "",
+                    "warning": "",
+                    "avoid": "AI response could not be parsed"
+                },
+                "verdict": "Caution"
+            })
 
     except Exception as e:
-        print(f"❌ AI error: {e}")
-        return jsonify({'message': '⚠️ Failed to analyze with OpenAI.', 'error': str(e)})
-
+        print("❌ AI error:", e)
+        return jsonify({
+            "ingredients": [],
+            "nutrition": {},
+            "summary": {
+                "safe": "",
+                "warning": "",
+                "avoid": "AI processing failed"
+            },
+            "verdict": "Caution"
+        })
 
 
 if __name__ == '__main__':
