@@ -9,30 +9,35 @@ const Login = ({ setIsLoggedIn }) => {
     const [password, setPassword] = useState('');
 
     const setData = async (e) => {
-        e.preventDefault();
+    e.preventDefault();
 
-        try {
-            const res = await fetch('/api/login', {
-                method: "POST",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
+    try {
+        const res = await fetch('/api/login', {
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
 
-            const data = await res.json();
-
-            if (res.status === 201) {
-                localStorage.setItem('token', data.token);
-                setIsLoggedIn(true);
-                window.alert('Login Successful!');
-                navigate('/landing');
-            } else {
-                window.alert(data.message || 'Login Failed!');
-            }
-        } catch (err) {
-            console.error(err);
-            window.alert('Something went wrong!');
+        // 👇 FIRST check if response is OK
+        if (!res.ok) {
+            const text = await res.text();
+            console.error("Server error:", text);
+            window.alert("Login failed!");
+            return;
         }
-    };
+
+        const data = await res.json(); // 👈 safe now
+
+        localStorage.setItem('token', data.token);
+        setIsLoggedIn(true);
+        window.alert('Login Successful!');
+        navigate('/landing');
+
+    } catch (err) {
+        console.error(err);
+        window.alert('Something went wrong!');
+    }
+};
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-white relative overflow-hidden p-4">

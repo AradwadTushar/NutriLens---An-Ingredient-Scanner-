@@ -43,14 +43,6 @@ export default function GeminiBot() {
     const handleSendMessage = async () => {
         if (!inputMessage.trim() && !selectedFile) return;
 
-        const userParts = [];
-        if (inputMessage.trim()) userParts.push({ text: inputMessage });
-        if (selectedFile && filePreview) {
-            const base64Data = filePreview.split(',')[1];
-            const mimeType = filePreview.split(';')[0].split(':')[1];
-            userParts.push({ inlineData: { mimeType, data: base64Data } });
-        }
-
         setMessages((prev) => [...prev, { sender: 'user', type: 'text', text: inputMessage, imageUrl: filePreview }]);
         setInputMessage('');
         clearSelectedFile();
@@ -59,44 +51,32 @@ export default function GeminiBot() {
         setIsLoading(true);
 
         try {
-            const systemInstruction = "You are Nutrii, a friendly assistant specialized in food, health, and ingredients. Your responses should be JSON with an 'analysis' key.";
-            const chatHistory = [
-                { role: "user", parts: [{ text: systemInstruction }] },
-                { role: "user", parts: userParts }
-            ];
+            // ✅ FIX: Send to backend instead of calling Gemini directly
+            // This keeps the API key secure on the server side
+            const token = localStorage.getItem('token');
 
-            const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            // Use FormData so we can send both text and image together
+            const formData = new FormData();
+            formData.append('message', inputMessage);
+            if (selectedFile) formData.append('image', selectedFile);
 
-            const payload = {
-                contents: chatHistory,
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: { analysis: { type: "STRING" } },
-                        propertyOrdering: ["analysis"]
-                    }
-                }
-            };
-
-            const response = await fetch(apiUrl, {
+            const response = await fetch('/api/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                headers: {
+                    'Authorization': `Bearer ${token}`  // ✅ JWT protected
+                },
+                body: formData
             });
 
-            const result = await response.json();
-
-            let aiResponseContent = "Sorry, I couldn't get a structured response.";
-            if (result?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                try {
-                    const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
-                    if (jsonResponse.analysis) aiResponseContent = jsonResponse.analysis;
-                } catch (e) {
-                    console.error("Parsing error:", e);
-                }
+            // ✅ Handle expired/missing token
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                window.location.href = '/login';
+                return;
             }
+
+            const result = await response.json();
+            const aiResponseContent = result.reply || "Sorry, I couldn't get a response.";
 
             setMessages((prev) => [...prev, { sender: 'ai', type: 'html', content: aiResponseContent }]);
         } catch (err) {

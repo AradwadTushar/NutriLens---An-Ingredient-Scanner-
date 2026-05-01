@@ -2,34 +2,48 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from flask_pymongo import PyMongo
 import bcrypt
-from flask_jwt_extended import JWTManager, create_access_token
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_mail import Mail, Message
 import traceback
 import os, cv2, re, numpy as np, time
 from paddleocr import PaddleOCR
 import openai
 #from openai import OpenAI
+import os
+from dotenv import load_dotenv
+import certifi
+import google.generativeai as genai
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+
+load_dotenv()
 
 # ✅ Initialize App and Configs
 app = Flask(__name__)
 CORS(app)
 
 # MongoDB Setup
-app.config['MONGO_URI'] = ''
-mongo = PyMongo(app)
+app.config['MONGO_URI'] = os.getenv("MONGO_URI")
 
-# Auth Secrets
-app.secret_key = 'secret key'
-app.config['JWT_SECRET_KEY'] = 'this-is-secret-key'
-jwt_manager = JWTManager(app)
+app.secret_key = os.getenv("JWT_SECRET_KEY")
+app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")
 
-# Email Config
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'nutrilensorg@gmail.com'
-app.config['MAIL_PASSWORD'] = 'olpp cnzu qijc lqve'
-mail = Mail(app)
+app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
+app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
+jwt = JWTManager(app)
+#print("MONGO URI RAW:", os.getenv("MONGO_URI"))
+app.config['MONGO_TLS_CA_FILE'] = certifi.where()
+mongo = PyMongo(app) 
+
+try:
+    mongo.cx.server_info()
+    print("✅ Mongo Connected Successfully")
+except Exception as e:
+    print("❌ Mongo Connection Failed:", e)
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+#print("OPENAI:", bool(os.getenv("OPENAI_API_KEY")))
+#print("MONGO:", bool(os.getenv("MONGO_URI")))
 
 # Upload folder
 UPLOAD_FOLDER = 'static/uploads'
@@ -39,7 +53,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # OCR & AI Setup
 # Initialize PaddleOCR
 ocr_model = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=False)
-openai.api_key = ""
+
 #import google.generativeai as genai
 
 # Health Check
@@ -101,6 +115,35 @@ def userLogout():
         return jsonify(message='Logout Successful'), 201
 
     return jsonify(message='Logout Failed'), 401
+
+
+@app.route('/chat', methods=['POST'])
+@jwt_required()
+def chat():
+    message = request.form.get('message', '')
+    image_file = request.files.get('image')
+
+    parts = []
+    if message:
+        parts.append(message)
+    if image_file:
+        import base64
+        image_data = image_file.read()
+        parts.append({
+            "mime_type": image_file.mimetype,
+            "data": base64.b64encode(image_data).decode('utf-8')
+        })
+
+    if not parts:
+        return jsonify({'reply': 'No message provided.'}), 400
+
+    try:
+        model = genai.GenerativeModel('models/gemini-2.5-flash')
+        response = model.generate_content(parts)
+        return jsonify({'reply': response.text})
+    except Exception as e:
+        print("Gemini error:", e)
+        return jsonify({'reply': f'Error: {str(e)}'}), 500
 
 # ------------------- IMAGE & ANALYSIS ROUTES -------------------
 
@@ -273,14 +316,22 @@ def extract_ingredients_from_text(results):
 #def index():
     #return render_template('index.html')
 
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+
 @app.route('/upload', methods=['POST'])
+@jwt_required()                          # ← add this line
 def upload_image():
+    current_user = get_jwt_identity()
     if 'image' not in request.files:
         return jsonify({'error': 'No image file found'}), 400
 
     try:
         file = request.files['image']
-        filename = file.filename
+        from werkzeug.utils import secure_filename   # add this at the top of the file
+
+        filename = secure_filename(file.filename)
+        if not filename:
+            return jsonify({'error': 'Invalid filename'}), 400
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(image_path)
         time.sleep(0.2)
@@ -309,7 +360,9 @@ def upload_image():
 
 
 @app.route('/analyze', methods=['POST'])
+@jwt_required()                          # ← add this line
 def analyze_ingredients():
+    current_user = get_jwt_identity()
     data = request.get_json()
 
     nutrition_lines = data.get('merged_text_lines', [])
@@ -399,7 +452,7 @@ Make sure to extract potassium, calcium, magnesium, and sodium if they are anywh
 
     try:
         response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a helpful food analysis assistant."},
                 {"role": "user", "content": prompt}
@@ -421,3 +474,4 @@ Make sure to extract potassium, calcium, magnesium, and sodium if they are anywh
 
 if __name__ == '__main__':
     app.run(debug=True)
+

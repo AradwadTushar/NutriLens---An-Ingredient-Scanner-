@@ -25,6 +25,7 @@ dist-ssr
 
 # Python virtual env
 venv/
+venv311/
 
 # Python cache
 __pycache__/
@@ -32,6 +33,8 @@ __pycache__/
 
 # Environment variables (IMPORTANT)
 .env
+backend/.env
+frontend/.env
 
 # Logs
 *.log
