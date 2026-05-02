@@ -380,7 +380,7 @@ Full Stack + AI
 
 ## 📄 License
 
-This project is licensed under the MIT License — see [LICENSE](/LIECENSE) for details.
+This project is licensed under the MIT License — see [LICENSE](/LICENSE) for details.
 
 ---
 
