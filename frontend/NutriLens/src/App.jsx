@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useState } from "react";
+
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -11,47 +12,60 @@ import Scanner from "./pages/scanner";
 import Result from "./pages/result";
 import Landing from "./pages/Landing";
 import GeminiBot from "./components/GeminiChatbot";
+import AboutTeam from "./components/AboutTeam";
+import Favorites from "./pages/Favorites";
+import History from "./pages/History";
 
 function AppWrapper() {
   const location = useLocation();
+
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
-  const [extractedData, setExtractedData] = useState(null);
-  const [showResult, setShowResult] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
 
   const hideNavbar = location.pathname === "/";
-  const hideChatbotButton = ["/", "/login", "/register"].includes(location.pathname);
-
+  const hideChatbotButton = ["/", "/login", "/register", "/scanner", "/result"].includes(location.pathname);
   return (
     <>
-      {!hideNavbar && <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />}
+      {/* Navbar */}
+      {!hideNavbar && (
+        <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
+      )}
 
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
-        <Route path="/register" element={<Register setIsLoggedIn={setIsLoggedIn} />} />
-        <Route path="/logout" element={<Logout setIsLoggedIn={setIsLoggedIn} />} />
-        <Route path="/team" element={<Team />} />
-        <Route path="/about" element={<About />} />
+      {/* ✅ GLOBAL OFFSET FIX (IMPORTANT) */}
+      <div className={!hideNavbar ? "pt-16" : ""}>
 
-        {/* Protected Routes */}
-        {isLoggedIn ? (
-          <>
-            <Route path="/landing" element={<Landing />} />
-            <Route path="/scanner" element={<Scanner setExtractedData={setExtractedData} setShowResult={setShowResult} />} />
-            <Route path="/result" element={<Result extractedData={extractedData} />} />
-          </>
-        ) : (
-          <>
-            <Route path="/landing" element={<Navigate to="/" />} />
-            <Route path="/scanner" element={<Navigate to="/" />} />
-            <Route path="/result" element={<Navigate to="/" />} />
-          </>
-        )}
-      </Routes>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
+          <Route path="/register" element={<Register setIsLoggedIn={setIsLoggedIn} />} />
+          <Route path="/logout" element={<Logout setIsLoggedIn={setIsLoggedIn} />} />
+          <Route path="/team" element={<AboutTeam />} />
+          <Route path="/about" element={<AboutTeam />} />
 
-      {/* Floating Chat Button Only for Logged-in Users and Allowed Pages */}
+          {/* Protected Routes */}
+          {isLoggedIn ? (
+            <>
+              <Route path="/landing" element={<Landing />} />
+              <Route path="/scanner" element={<Scanner />} />
+              <Route path="/result" element={<Result />} />
+              <Route path="/favorites" element={<Favorites />} />
+              <Route path="/history" element={<History />} />
+            </>
+          ) : (
+            <>
+              <Route path="/landing" element={<Navigate to="/" />} />
+              <Route path="/scanner" element={<Navigate to="/" />} />
+              <Route path="/result" element={<Navigate to="/" />} />
+              <Route path="/favorites" element={<Navigate to="/" />} />
+              <Route path="/history" element={<Navigate to="/" />} />
+            </>
+          )}
+        </Routes>
+
+      </div>
+
+      {/* 💬 Floating Chat Button */}
       {isLoggedIn && !hideChatbotButton && (
         <button
           onClick={() => setShowChatbot(true)}
@@ -62,7 +76,7 @@ function AppWrapper() {
         </button>
       )}
 
-      {/* Popup Chatbot with Animation */}
+      {/* 🤖 Chatbot Modal */}
       {showChatbot && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 animate-fadeIn">
           <div className="relative max-w-3xl w-full animate-chatbot-in">
