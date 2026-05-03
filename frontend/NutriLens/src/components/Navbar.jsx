@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import logo from "../assets/Nutrilens logo white.png";
 
-const Navbar = ({ isLoggedIn, setIsLoggedIn }) => {
+const Navbar = ({ isLoggedIn, setIsLoggedIn, setShowChatbot }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -74,6 +74,15 @@ const Navbar = ({ isLoggedIn, setIsLoggedIn }) => {
 
             {isLoggedIn ? (
               <>
+              <button
+  onClick={() => setShowChatbot(true)}
+  className="hidden md:flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors active:scale-95"
+  title="Ask Nutrii"
+>
+  <span className="material-symbols-outlined text-on-surface">
+    smart_toy
+  </span>
+</button>
                 {/* Profile avatar — desktop dropdown */}
                 <div className="relative hidden md:block">
                   <button
@@ -231,6 +240,24 @@ const Navbar = ({ isLoggedIn, setIsLoggedIn }) => {
               <span className="text-label-md">{link.label}</span>
             </NavLink>
           ))}
+
+          {isLoggedIn && (
+  <button
+    onClick={() => {
+      setShowChatbot(true);
+      setMenuOpen(false);
+    }}
+    className="flex items-center gap-md px-md py-3 rounded-xl mb-xs transition-all text-on-surface hover:bg-surface-container-high w-full"
+  >
+    <span
+      className="material-symbols-outlined text-[20px]"
+      style={{ fontVariationSettings: "'FILL' 1" }}
+    >
+      smart_toy
+    </span>
+    <span className="text-label-md">Ask Nutrii</span>
+  </button>
+)}
 
           {/* History — extra link in drawer */}
           {isLoggedIn && (

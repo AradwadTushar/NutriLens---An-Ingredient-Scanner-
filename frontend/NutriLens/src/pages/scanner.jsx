@@ -62,7 +62,15 @@ export default function Scanner({ setExtractedData, setShowResult }) {
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-      if (res.status === 401) { alert("Session expired."); navigate("/login"); return; }
+      if (res.status === 401) {
+  alert("Session expired. Please log in again.");
+
+  localStorage.removeItem("token");   // 🔥 important
+  setIsLoggedIn(false);               // 🔥 important
+  navigate("/login");
+
+  return;
+}
       const data = await res.json();
       setLocalExtractedData(data);
       setOcrStatus("success");
@@ -111,7 +119,15 @@ export default function Scanner({ setExtractedData, setShowResult }) {
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-      if (res.status === 401) { alert("Session expired."); navigate("/login"); return; }
+      if (res.status === 401) {
+  alert("Session expired. Please log in again.");
+
+  localStorage.removeItem("token");
+  setIsLoggedIn(false);
+  navigate("/login");
+
+  return;
+}
       const data = await res.json();
       setLocalExtractedData(data);
       setOcrStatus("success");
@@ -138,7 +154,15 @@ export default function Scanner({ setExtractedData, setShowResult }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
-      if (res.status === 401) { alert("Session expired."); navigate("/login"); return; }
+     if (res.status === 401) {
+  alert("Session expired. Please log in again.");
+
+  localStorage.removeItem("token");   // 🔥 important
+  setIsLoggedIn(false);               // 🔥 important
+  navigate("/login");
+
+  return;
+}
       const result = await res.json();
       navigate("/result", {
         state: {

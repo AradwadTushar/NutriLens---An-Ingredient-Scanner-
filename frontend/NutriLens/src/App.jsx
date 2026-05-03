@@ -1,49 +1,93 @@
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+  Navigate,
+} from "react-router-dom";
+import { useState, useEffect } from "react";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Navbar from "./components/Navbar";
 import Logout from "./components/Logout";
-import Team from "./components/Team";
-import About from "./components/Aboutus";
+import AboutTeam from "./components/AboutTeam";
 import Scanner from "./pages/scanner";
 import Result from "./pages/result";
 import Landing from "./pages/Landing";
 import GeminiBot from "./components/GeminiChatbot";
-import AboutTeam from "./components/AboutTeam";
 import Favorites from "./pages/Favorites";
 import History from "./pages/History";
 
 function AppWrapper() {
   const location = useLocation();
 
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [showChatbot, setShowChatbot] = useState(false);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
+    }
+
+    setLoading(false);
+  }, []);
+
   const hideNavbar = location.pathname === "/";
-  const hideChatbotButton = ["/", "/login", "/register", "/scanner", "/result"].includes(location.pathname);
+
+  if (loading) return null;
+
   return (
     <>
       {/* Navbar */}
       {!hideNavbar && (
-        <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
+        <Navbar
+          isLoggedIn={isLoggedIn}
+          setIsLoggedIn={setIsLoggedIn}
+          setShowChatbot={setShowChatbot}
+        />
       )}
 
-      {/* ✅ GLOBAL OFFSET FIX (IMPORTANT) */}
       <div className={!hideNavbar ? "pt-16" : ""}>
-
         <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
-          <Route path="/register" element={<Register setIsLoggedIn={setIsLoggedIn} />} />
+          {/* ✅ Public routes (blocked if logged in) */}
+          <Route
+            path="/"
+            element={isLoggedIn ? <Navigate to="/landing" /> : <Home />}
+          />
+          <Route
+            path="/login"
+            element={
+              isLoggedIn ? (
+                <Navigate to="/landing" />
+              ) : (
+                <Login setIsLoggedIn={setIsLoggedIn} />
+              )
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              isLoggedIn ? (
+                <Navigate to="/landing" />
+              ) : (
+                <Register setIsLoggedIn={setIsLoggedIn} />
+              )
+            }
+          />
+
+          {/* Always accessible */}
           <Route path="/logout" element={<Logout setIsLoggedIn={setIsLoggedIn} />} />
           <Route path="/team" element={<AboutTeam />} />
           <Route path="/about" element={<AboutTeam />} />
 
-          {/* Protected Routes */}
+          {/* ✅ Protected routes */}
           {isLoggedIn ? (
             <>
               <Route path="/landing" element={<Landing />} />
@@ -62,21 +106,9 @@ function AppWrapper() {
             </>
           )}
         </Routes>
-
       </div>
 
-      {/* 💬 Floating Chat Button */}
-      {isLoggedIn && !hideChatbotButton && (
-        <button
-          onClick={() => setShowChatbot(true)}
-          className="fixed bottom-5 right-5 bg-indigo-600 text-white p-4 rounded-full shadow-xl hover:bg-indigo-700 transition transform hover:scale-110 z-50"
-          title="Ask Nutrii"
-        >
-          💬
-        </button>
-      )}
-
-      {/* 🤖 Chatbot Modal */}
+      {/* Chatbot Modal */}
       {showChatbot && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 animate-fadeIn">
           <div className="relative max-w-3xl w-full animate-chatbot-in">
