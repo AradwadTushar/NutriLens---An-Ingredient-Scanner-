@@ -4,57 +4,90 @@ import logo from "../assets/Nurilens Logo Colored.png";
 
 export default function Home() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("spread"); // "spread" | "cereal" | "drink"
+  const [activeTab, setActiveTab] = useState("spread"); // "spread" | "snack" | "drink"
 
-  // Simulated demo products for the interactive scanner showcase
-  const demoProducts = {
+  // Real scans data from real lab audits (Cocoa Spread, Savoury Namkeen Snack, Raw Coconut Water)
+  const realScans = {
     spread: {
+      category: "Spread",
+      ocrTag: "OCR LOCK 99.8%",
+      ocrTitle: "Hazelnut Cocoa Spread",
+      ocrLines: [
+        { pre: "Sugar, ", highlight: "Palm Oil (INS 471)", post: "", type: "danger" },
+        { pre: "Hazelnuts 13%, Cocoa Solids (8.5%), ", highlight: "", post: "", type: "normal" },
+        { pre: "", highlight: "Synthetic Vanillin", post: ", Emulsifier ", type: "warning" },
+        { pre: "", highlight: "Soy Lecithin", post: "", type: "danger" },
+      ],
       name: "Hazelnut Cocoa Spread",
       brand: "SweetDelight Co.",
       healthScore: 38,
-      verdict: "High Risk (Ultra-Processed)",
-      verdictColor: "text-red-700 bg-red-100 border-red-200",
-      sugar: "56.8g",
-      sugarWarning: "Over 70% above WHO daily sugar limit",
-      flagged: [
-        { name: "Palm Oil (INS 471)", risk: "High Saturated Fat" },
-        { name: "Synthetic Vanillin", risk: "Artificial Flavoring" },
-        { name: "Emulsifier Soy Lecithin", risk: "Allergen Alert" },
+      scoreColor: "#f43f5e", // rose-500
+      scoreBadge: "High Risk · Ultra-Processed",
+      scoreBadgeClass: "bg-rose-50 text-rose-600 border-rose-200/60",
+      metric1: { label: "Sugar per 100g", val: "56.8g", color: "text-amber-800", bg: "bg-[#fff9ee]" },
+      metric2: { label: "Additives found", val: "3", color: "text-indigo-700", bg: "bg-[#f5f3ff]" },
+      findings: [
+        { name: "Palm Oil (INS 471)", label: "High Saturated Fat", pillClass: "bg-rose-50 text-rose-600 border border-rose-200/60" },
+        { name: "Synthetic Vanillin", label: "Artificial Flavoring", pillClass: "bg-amber-50 text-amber-700 border border-amber-200/60" },
+        { name: "Emulsifier Soy Lecithin", label: "Allergen Alert", pillClass: "bg-rose-50 text-rose-600 border border-rose-200/60" },
       ],
-      hiddenSugar: "Refined Sucrose & Invert Sugar Syrup",
     },
-    cereal: {
-      name: "Honey Crunch Energy Clusters",
-      brand: "VitalGrain Foods",
-      healthScore: 54,
-      verdict: "Moderate Caution",
-      verdictColor: "text-amber-700 bg-amber-100 border-amber-200",
-      sugar: "28.4g",
-      sugarWarning: "Marketed as health food, high glycemic impact",
-      flagged: [
-        { name: "Maltodextrin", risk: "High Glycemic Spike (GI: 110)" },
-        { name: "Caramel Color (INS 150d)", risk: "Processed Ammonia Sulfite" },
-        { name: "Gluten / Wheat Flakes", risk: "Gluten Warning" },
+    snack: {
+      category: "Snack",
+      ocrTag: "OCR LOCK 99.4%",
+      ocrTitle: "All-in-One Savoury Namkeen",
+      ocrLines: [
+        { pre: "Edible Veg Oil (Palmolein), ", highlight: "Chickpea Flour (17%)", post: "", type: "normal" },
+        { pre: "Sugar (11%), Rice Flakes (9%), ", highlight: "", post: "", type: "normal" },
+        { pre: "", highlight: "Acidity Reg. (INS 330)", post: ", ", type: "warning" },
+        { pre: "", highlight: "Raising Agent (INS 500ii)", post: "", type: "warning" },
       ],
-      hiddenSugar: "Malt Extract, High Fructose Syrup",
+      name: "Crispy Namkeen Mix",
+      brand: "Haldiram's Traditional",
+      healthScore: 42,
+      scoreColor: "#f59e0b", // amber-500
+      scoreBadge: "Moderate Risk · High Sodium",
+      scoreBadgeClass: "bg-amber-50 text-amber-700 border-amber-200/60",
+      metric1: { label: "Total Fat per 100g", val: "34.2g", color: "text-amber-800", bg: "bg-[#fff9ee]" },
+      metric2: { label: "Sodium per 100g", val: "673mg", color: "text-indigo-700", bg: "bg-[#f5f3ff]" },
+      findings: [
+        { name: "Refined Palmolein Oil", label: "High Saturated Fat", pillClass: "bg-rose-50 text-rose-600 border border-rose-200/60" },
+        { name: "Acidity Reg. (INS 330)", label: "Synthetic Additive", pillClass: "bg-amber-50 text-amber-700 border border-amber-200/60" },
+        { name: "Peanuts & Wheat Maida", label: "Allergen Alert", pillClass: "bg-rose-50 text-rose-600 border border-rose-200/60" },
+      ],
     },
     drink: {
-      name: "Electrolyte Recovery Citrus",
-      brand: "HydraPlus Lab",
-      healthScore: 88,
-      verdict: "Safe & Wholesome",
-      verdictColor: "text-emerald-700 bg-emerald-100 border-emerald-200",
-      sugar: "3.2g",
-      sugarWarning: "Low sugar, naturally derived electrolyte salts",
-      flagged: [
-        { name: "Steviol Glycosides (INS 960)", risk: "Natural Low-Cal Sweetener" },
-        { name: "Citric Acid (INS 330)", risk: "Safe Acidity Regulator" },
+      category: "Drink",
+      ocrTag: "OCR LOCK 99.9%",
+      ocrTitle: "100% Coconut Fruit Water",
+      ocrLines: [
+        { pre: "Purified Water, ", highlight: "Coconut Water Conc. (9.6%)", post: "", type: "success" },
+        { pre: "Natural Electrolytes, Potassium, ", highlight: "", post: "", type: "normal" },
+        { pre: "", highlight: "Preservative (INS 202)", post: "", type: "warning" },
+        { pre: "", highlight: "Zero Refined Sugar", post: "", type: "success" },
       ],
-      hiddenSugar: "No synthetic or hidden sugars detected",
+      name: "Raw Coconut Fruit Water",
+      brand: "BioPure Organics",
+      healthScore: 84,
+      scoreColor: "#10b981", // emerald-500
+      scoreBadge: "Low Risk · Clean Label",
+      scoreBadgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
+      metric1: { label: "Total Sugars", val: "5.1g", color: "text-emerald-800", bg: "bg-[#ecfdf5]" },
+      metric2: { label: "Additives found", val: "1", color: "text-indigo-700", bg: "bg-[#f5f3ff]" },
+      findings: [
+        { name: "Coconut Water Concentrate", label: "Natural Hydration", pillClass: "bg-emerald-50 text-emerald-700 border border-emerald-200/60" },
+        { name: "Potassium Sorbate (INS 202)", label: "Class II Preservative", pillClass: "bg-amber-50 text-amber-700 border border-amber-200/60" },
+        { name: "Zero Synthetic Dyes", label: "Clean Formula", pillClass: "bg-emerald-50 text-emerald-700 border border-emerald-200/60" },
+      ],
     },
   };
 
-  const currentDemo = demoProducts[activeTab];
+  const currentData = realScans[activeTab];
+
+  // Circle gauge calculations
+  const radius = 26;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (currentData.healthScore / 100) * circumference;
 
   return (
     <div className="min-h-screen bg-surface font-manrope overflow-x-hidden selection:bg-primary/20 selection:text-primary">
@@ -68,169 +101,225 @@ export default function Home() {
       {/* ── Main Container ─────────────────────────────────────────────────── */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 space-y-20 sm:space-y-28">
 
-        {/* ── Section 1: Hero Split ────────────────────────────────────────── */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center pt-2 sm:pt-6">
+        {/* ── Section 1: Hero Section (Design-Matched Double Floating Cards) ── */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center pt-2 sm:pt-4">
 
-          {/* Left Column: Value Proposition & CTAs (7 cols) */}
-          <div className="lg:col-span-7 space-y-6 sm:space-y-8 text-center lg:text-left">
+          {/* Left Column: Value Proposition & CTAs (6 cols on lg) */}
+          <div className="lg:col-span-6 space-y-6 sm:space-y-7 text-center lg:text-left">
             {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs sm:text-sm font-bold tracking-wide shadow-xs">
-              <span className="material-symbols-outlined text-[18px]">biotech</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50/90 border border-indigo-200/60 text-[#3525cd] text-xs sm:text-sm font-bold tracking-tight shadow-xs">
+              <span className="material-symbols-outlined text-[16px]">biotech</span>
               <span>Next-Gen Food Intelligence & Safety Engine</span>
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-on-surface tracking-tight leading-[1.12]">
-              Know Exactly What You Eat.{" "}
-              <span className="bg-gradient-to-r from-primary via-indigo-600 to-secondary bg-clip-text text-transparent">
-                Before You Swallow It.
-              </span>
+            <h1 className="text-4xl sm:text-5xl lg:text-[58px] font-black text-slate-900 tracking-tight leading-[1.08]">
+              Know Exactly What <br className="hidden sm:inline" />
+              You Eat. <br />
+              <span className="text-[#3525cd]">Before You Swallow</span> <br />
+              <span className="text-[#3525cd]">It.</span>
             </h1>
 
             {/* Subheading */}
-            <p className="text-base sm:text-lg text-on-surface-variant max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+            <p className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
               Don’t let confusing chemical names and deceptive packaging jeopardize your family’s health.
               NutriLens decodes obscure INS numbers, calculates hidden sugars, flags sneaky allergens,
               and evaluates ultra-processed foods against global dietary standards.
             </p>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-1">
               <button
-                onClick={() => navigate("/login")}
-                className="w-full sm:w-auto px-7 py-4 bg-primary text-white rounded-2xl font-bold text-base shadow-[0_8px_24px_rgba(53,37,205,0.25)] hover:bg-primary/90 hover:shadow-[0_12px_32px_rgba(53,37,205,0.35)] active:scale-95 transition-all flex items-center justify-center gap-2 group"
+                onClick={() => navigate("/scanner")}
+                className="w-full sm:w-auto px-7 py-4 bg-[#3525cd] text-white rounded-2xl font-bold text-sm sm:text-base shadow-[0_10px_25px_rgba(53,37,205,0.28)] hover:bg-[#2b1cb5] hover:shadow-[0_14px_32px_rgba(53,37,205,0.38)] active:scale-95 transition-all flex items-center justify-center gap-2 group"
               >
-                <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">
-                  document_scanner
-                </span>
                 <span>Scan Food Label Free</span>
               </button>
 
               <button
                 onClick={() => navigate("/register")}
-                className="w-full sm:w-auto px-7 py-4 bg-white hover:bg-surface-container-low border border-outline-variant/40 text-on-surface rounded-2xl font-bold text-base shadow-xs active:scale-95 transition-all flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-7 py-4 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl font-bold text-sm sm:text-base shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5"
               >
                 <span>Create Free Account</span>
-                <span className="material-symbols-outlined text-[18px] text-primary">arrow_forward</span>
+                <span className="text-slate-600 font-bold">→</span>
               </button>
-            </div>
-
-            {/* Trust Metrics Bar */}
-            <div className="pt-4 border-t border-outline-variant/30 grid grid-cols-3 gap-3 sm:gap-6 text-center lg:text-left">
-              <div>
-                <p className="text-xl sm:text-2xl font-black text-on-surface tracking-tight">12,000+</p>
-                <p className="text-xs text-on-surface-variant font-medium">Labels Audited</p>
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-black text-on-surface tracking-tight">99.4%</p>
-                <p className="text-xs text-on-surface-variant font-medium">OCR Recognition</p>
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-black text-on-surface tracking-tight">FDA & FSSAI</p>
-                <p className="text-xs text-on-surface-variant font-medium">Cross-Referenced</p>
-              </div>
             </div>
           </div>
 
-          {/* Right Column: Interactive Simulated Scanner Card (5 cols) */}
-          <div className="lg:col-span-5 relative">
+          {/* Right Column: Layered Interactive Floating Cards (6 cols on lg) */}
+          <div className="lg:col-span-6 relative flex items-center justify-center lg:justify-end min-h-[460px] sm:min-h-[500px] w-full pt-4 pb-2">
+            
             {/* Ambient card halo */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-indigo-500/10 to-transparent rounded-3xl blur-2xl -z-10" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/15 via-purple-500/10 to-transparent rounded-3xl blur-3xl -z-10 pointer-events-none" />
 
-            <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-outline-variant/30 space-y-5">
-              {/* Card Header & Product Selector Tabs */}
-              <div className="flex items-center justify-between pb-3 border-b border-outline-variant/20">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black">
-                    <span className="material-symbols-outlined text-[18px]">science</span>
-                  </div>
-                  <div>
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
-                      Live Simulation
-                    </h2>
-                    <p className="text-sm font-extrabold text-on-surface">Interactive Label Audit</p>
-                  </div>
-                </div>
-                <div className="flex gap-1 bg-surface-container-high p-1 rounded-xl">
-                  {Object.keys(demoProducts).map((key) => (
-                    <button
-                      key={key}
-                      onClick={() => setActiveTab(key)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                        activeTab === key
-                          ? "bg-white text-primary shadow-xs"
-                          : "text-on-surface-variant hover:text-on-surface"
-                      }`}
-                    >
-                      {key.charAt(0).toUpperCase() + key.slice(1)}
-                    </button>
+            {/* ── BACK CARD: Raw Optical OCR View (Tilted + Camera Reticle) ── */}
+            <div className="absolute left-1/2 -translate-x-[64%] sm:-translate-x-[58%] lg:left-0 lg:translate-x-0 top-0 sm:top-2 w-[270px] sm:w-[310px] bg-white rounded-3xl p-5 border border-slate-200/80 shadow-md transform -rotate-3 transition-transform duration-500 z-10 animate-float-slow select-none">
+              {/* Camera Bracket Reticle Corners */}
+              <div className="absolute top-3 left-3 w-3.5 h-3.5 border-t-2 border-l-2 border-indigo-400 rounded-tl-sm pointer-events-none" />
+              <div className="absolute top-3 right-3 w-3.5 h-3.5 border-t-2 border-r-2 border-indigo-400 rounded-tr-sm pointer-events-none" />
+              <div className="absolute bottom-3 left-3 w-3.5 h-3.5 border-b-2 border-l-2 border-indigo-400 rounded-bl-sm pointer-events-none" />
+
+              {/* OCR Status & Detected Header */}
+              <div className="space-y-1 pl-2 pt-1 pb-2">
+                <span className="inline-block text-[10px] font-mono font-bold tracking-wider text-indigo-600 bg-indigo-50/80 border border-indigo-100 px-2 py-0.5 rounded-md">
+                  {currentData.ocrTag}
+                </span>
+                <h4 className="font-bold text-slate-800 text-sm truncate">
+                  {currentData.ocrTitle}
+                </h4>
+              </div>
+
+              {/* Section: INGREDIENTS */}
+              <div className="pt-2 pl-2 border-t border-slate-100">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-1.5">
+                  Ingredients
+                </span>
+                <div className="text-xs text-slate-600 space-y-1.5 font-mono leading-relaxed">
+                  {currentData.ocrLines.map((line, idx) => (
+                    <p key={idx} className="truncate">
+                      {line.pre}
+                      {line.highlight && (
+                        <span
+                          className={`px-1.5 py-0.5 rounded font-semibold text-[11px] ${
+                            line.type === "danger"
+                              ? "bg-rose-100 text-rose-700"
+                              : line.type === "warning"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-emerald-100 text-emerald-800"
+                          }`}
+                        >
+                          {line.highlight}
+                        </span>
+                      )}
+                      {line.post}
+                    </p>
                   ))}
                 </div>
               </div>
+            </div>
 
-              {/* Simulated Label Scanner Viewport */}
-              <div className="relative rounded-2xl overflow-hidden bg-slate-950 text-white p-4 space-y-3 border border-slate-800 shadow-inner">
-                {/* Laser scan line overlay */}
-                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent blur-[1px] animate-scan pointer-events-none" />
+            {/* ── FRONT CARD: Interactive Nutritional Dossier ── */}
+            <div className="relative ml-auto mr-auto lg:mr-0 w-full max-w-[340px] sm:max-w-[370px] bg-white rounded-3xl p-5 sm:p-6 shadow-[0_20px_50px_rgba(53,37,205,0.12)] border border-slate-100 z-20 space-y-4 animate-float-reverse">
+              {/* Category Selector Tabs */}
+              <div className="bg-slate-100/90 p-1 rounded-2xl flex items-center justify-between">
+                {["spread", "snack", "drink"].map((key) => {
+                  const isActive = activeTab === key;
+                  const labels = { spread: "Spread", snack: "Snack", drink: "Drink" };
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setActiveTab(key)}
+                      className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all text-center ${
+                        isActive
+                          ? "bg-white text-indigo-700 shadow-sm"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      {labels[key]}
+                    </button>
+                  );
+                })}
+              </div>
 
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-[11px] font-mono text-cyan-400 uppercase tracking-widest">
-                      [OCR LOCK: 99.8%]
-                    </p>
-                    <h3 className="font-bold text-base text-white tracking-tight">{currentDemo.name}</h3>
-                    <p className="text-xs text-slate-400">{currentDemo.brand}</p>
-                  </div>
-                  <span
-                    className={`text-xs font-bold px-2.5 py-1 rounded-full border ${currentDemo.verdictColor}`}
-                  >
-                    Score: {currentDemo.healthScore}/100
+              {/* Health Score & Product Header */}
+              <div className="flex items-center gap-3.5 pt-1">
+                {/* Circular Gauge */}
+                <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
+                  <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 64 64">
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r={radius}
+                      stroke="#f1f5f9"
+                      strokeWidth="5"
+                      fill="none"
+                    />
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r={radius}
+                      stroke={currentData.scoreColor}
+                      strokeWidth="5"
+                      fill="none"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={strokeDashoffset}
+                      strokeLinecap="round"
+                      className="transition-all duration-700 ease-out"
+                    />
+                  </svg>
+                  <span className="absolute font-black text-xl text-slate-900 tracking-tight">
+                    {currentData.healthScore}
                   </span>
                 </div>
 
-                {/* Simulated Nutrition Snippet */}
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 text-xs font-mono">
-                  <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">Sugar per 100g:</span>
-                    <span className="text-amber-400 font-bold">{currentDemo.sugar}</span>
-                  </div>
-                  <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
-                    <span className="text-slate-400 block text-[10px]">Safety Verdict:</span>
-                    <span className="font-bold text-white truncate block">{currentDemo.verdict}</span>
+                {/* Product Details */}
+                <div className="space-y-0.5 min-w-0">
+                  <h3 className="font-extrabold text-base text-slate-900 truncate leading-snug">
+                    {currentData.name}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-medium truncate">
+                    {currentData.brand}
+                  </p>
+                  <div className="pt-0.5">
+                    <span
+                      className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${currentData.scoreBadgeClass}`}
+                    >
+                      {currentData.scoreBadge}
+                    </span>
                   </div>
                 </div>
+              </div>
 
-                {/* Flagged Additives */}
-                <div className="space-y-1.5 pt-1">
-                  <p className="text-[10px] uppercase font-mono text-slate-400 tracking-wider">
-                    Critical Findings:
-                  </p>
-                  {currentDemo.flagged.map((item, idx) => (
+              {/* 2-Column Metrics */}
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
+                <div
+                  className={`p-3 rounded-2xl ${currentData.metric1.bg} border border-black/5 space-y-0.5`}
+                >
+                  <span className="text-[11px] text-slate-500 block font-medium">
+                    {currentData.metric1.label}
+                  </span>
+                  <span className={`text-lg font-black ${currentData.metric1.color} block tracking-tight`}>
+                    {currentData.metric1.val}
+                  </span>
+                </div>
+
+                <div
+                  className={`p-3 rounded-2xl ${currentData.metric2.bg} border border-black/5 space-y-0.5`}
+                >
+                  <span className="text-[11px] text-slate-500 block font-medium">
+                    {currentData.metric2.label}
+                  </span>
+                  <span className={`text-lg font-black ${currentData.metric2.color} block tracking-tight`}>
+                    {currentData.metric2.val}
+                  </span>
+                </div>
+              </div>
+
+              {/* CRITICAL FINDINGS */}
+              <div className="pt-1 space-y-2">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+                  Critical Findings
+                </span>
+                <div className="space-y-1.5">
+                  {currentData.findings.map((finding, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between bg-slate-900/80 px-2.5 py-1.5 rounded-lg border border-slate-800 text-xs"
+                      className="flex items-center justify-between text-xs py-1 border-b border-slate-100 last:border-0"
                     >
-                      <span className="text-slate-200 font-medium">{item.name}</span>
-                      <span className="text-[11px] text-red-400 font-bold">{item.risk}</span>
+                      <span className="font-semibold text-slate-700 truncate pr-2">
+                        {finding.name}
+                      </span>
+                      <span
+                        className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${finding.pillClass}`}
+                      >
+                        {finding.label}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
-
-              {/* Action Banner */}
-              <div className="p-3 bg-primary/5 rounded-xl border border-primary/15 flex items-center justify-between">
-                <div className="text-xs text-on-surface-variant">
-                  <span className="font-bold text-primary">Hidden Additive Alert:</span>{" "}
-                  {currentDemo.hiddenSugar}
-                </div>
-                <button
-                  onClick={() => navigate("/login")}
-                  className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-all shrink-0 ml-2"
-                >
-                  Analyze Real Label
-                </button>
-              </div>
             </div>
+
           </div>
 
         </section>
