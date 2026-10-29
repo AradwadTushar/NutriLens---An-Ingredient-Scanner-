@@ -2,7 +2,6 @@ import {
   BrowserRouter,
   Routes,
   Route,
-  useLocation,
   Navigate,
 } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -19,53 +18,46 @@ import Landing from "./pages/Landing";
 import GeminiBot from "./components/GeminiChatbot";
 import Favorites from "./pages/Favorites";
 import History from "./pages/History";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function AppWrapper() {
-  const location = useLocation();
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showChatbot, setShowChatbot] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-
     if (token) {
       setIsLoggedIn(true);
     } else {
       setIsLoggedIn(false);
     }
-
     setLoading(false);
   }, []);
-
-  const hideNavbar = location.pathname === "/";
 
   if (loading) return null;
 
   return (
     <>
-      {/* Navbar */}
-      {!hideNavbar && (
-        <Navbar
-          isLoggedIn={isLoggedIn}
-          setIsLoggedIn={setIsLoggedIn}
-          setShowChatbot={setShowChatbot}
-        />
-      )}
+      {/* Global Navbar */}
+      <Navbar
+        isLoggedIn={isLoggedIn}
+        setIsLoggedIn={setIsLoggedIn}
+        setShowChatbot={setShowChatbot}
+      />
 
-      <div className={!hideNavbar ? "pt-16" : ""}>
+      <div className="pt-16">
         <Routes>
-          {/* ✅ Public routes (blocked if logged in) */}
+          {/* Public routes (redirect to /landing if already logged in) */}
           <Route
             path="/"
-            element={isLoggedIn ? <Navigate to="/landing" /> : <Home />}
+            element={isLoggedIn ? <Navigate to="/landing" replace /> : <Home />}
           />
           <Route
             path="/login"
             element={
               isLoggedIn ? (
-                <Navigate to="/landing" />
+                <Navigate to="/landing" replace />
               ) : (
                 <Login setIsLoggedIn={setIsLoggedIn} />
               )
@@ -75,7 +67,7 @@ function AppWrapper() {
             path="/register"
             element={
               isLoggedIn ? (
-                <Navigate to="/landing" />
+                <Navigate to="/landing" replace />
               ) : (
                 <Register setIsLoggedIn={setIsLoggedIn} />
               )
@@ -84,10 +76,11 @@ function AppWrapper() {
 
           {/* Always accessible */}
           <Route path="/logout" element={<Logout setIsLoggedIn={setIsLoggedIn} />} />
-          <Route path="/team" element={<AboutTeam />} />
           <Route path="/about" element={<AboutTeam />} />
+          {/* Legacy /team redirect to /about */}
+          <Route path="/team" element={<Navigate to="/about" replace />} />
 
-          {/* ✅ Protected routes */}
+          {/* Protected routes */}
           {isLoggedIn ? (
             <>
               <Route path="/landing" element={<Landing />} />
@@ -95,30 +88,35 @@ function AppWrapper() {
               <Route path="/result" element={<Result />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/history" element={<History />} />
+              <Route path="/admin" element={<AdminDashboard />} />
             </>
           ) : (
             <>
-              <Route path="/landing" element={<Navigate to="/" />} />
-              <Route path="/scanner" element={<Navigate to="/" />} />
-              <Route path="/result" element={<Navigate to="/" />} />
-              <Route path="/favorites" element={<Navigate to="/" />} />
-              <Route path="/history" element={<Navigate to="/" />} />
+              <Route path="/landing" element={<Navigate to="/login" replace />} />
+              <Route path="/scanner" element={<Navigate to="/login" replace />} />
+              <Route path="/result" element={<Navigate to="/login" replace />} />
+              <Route path="/favorites" element={<Navigate to="/login" replace />} />
+              <Route path="/history" element={<Navigate to="/login" replace />} />
+              <Route path="/admin" element={<Navigate to="/login" replace />} />
             </>
           )}
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
 
       {/* Chatbot Modal */}
       {showChatbot && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 animate-fadeIn">
-          <div className="relative max-w-3xl w-full animate-chatbot-in">
-            <button
-              onClick={() => setShowChatbot(false)}
-              className="absolute top-2 right-2 text-white bg-red-500 p-2 rounded-full hover:bg-red-600 z-50"
-            >
-              ✖
-            </button>
-            <GeminiBot />
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4"
+          onClick={() => setShowChatbot(false)}
+        >
+          <div
+            className="relative max-w-xl w-full animate-scaleUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GeminiBot onClose={() => setShowChatbot(false)} />
           </div>
         </div>
       )}

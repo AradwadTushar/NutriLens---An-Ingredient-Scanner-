@@ -3,84 +3,110 @@ import { useNavigate } from "react-router-dom";
 export default function Favorites() {
   const navigate = useNavigate();
 
-  // ✅ Safe parsing
+  // Support both key formats
   let favs = [];
   try {
-    favs = JSON.parse(localStorage.getItem("favorites")) || [];
+    const list1 = JSON.parse(localStorage.getItem("nutrilens_favorites") || "[]");
+    const list2 = JSON.parse(localStorage.getItem("favorites") || "[]");
+    favs = [...list1, ...list2];
   } catch {
     favs = [];
   }
 
   return (
-    <div className="min-h-screen bg-background font-manrope px-container-margin py-lg max-w-2xl mx-auto">
-
-      {/* 🔝 Header */}
-      <div className="flex items-center justify-between mb-lg">
+    <div className="min-h-screen bg-surface font-manrope py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-4 border-b border-outline-variant/20">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-xs text-primary text-label-md hover:opacity-80"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-surface-container-high text-on-surface text-xs font-bold transition-all active:scale-95"
         >
-          <span className="material-symbols-outlined">arrow_back</span>
-          Back
+          <span className="material-symbols-outlined text-[18px] text-primary">arrow_back</span>
+          <span>Back</span>
         </button>
 
-        <h1 className="text-headline-md text-on-surface">
-          Favorites
-        </h1>
-
-        <div className="w-10" /> {/* spacer */}
-      </div>
-
-      {/* 📭 Empty State */}
-      {favs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center py-20 space-y-md">
-          <span className="material-symbols-outlined text-5xl text-on-surface-variant">
-            favorite_border
-          </span>
-          <p className="text-body-md text-on-surface-variant">
-            No favorites yet.
+        <div className="text-center">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-on-surface">
+            Saved Food Dossiers
+          </h1>
+          <p className="text-xs text-on-surface-variant">
+            {favs.length} saved {favs.length === 1 ? "report" : "reports"}
           </p>
         </div>
-      ) : (
-        <div className="space-y-md">
 
-          {favs.map((item, i) => (
-            <div
-              key={i}
-              className="bg-surface-container-lowest p-md rounded-xl shadow-sm border border-outline-variant/20 hover:shadow-md transition cursor-pointer active:scale-[0.98]"
-              onClick={() => {
-                if (!item?.data) return;
+        <div className="w-16" />
+      </div>
 
-                navigate("/result", {
-                  state: { extractedData: item.data }
-                });
-              }}
+      {/* Empty State */}
+      {favs.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 text-center border border-outline-variant/30 shadow-xs space-y-3 max-w-md mx-auto">
+          <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mx-auto">
+            <span className="material-symbols-outlined text-[24px]">favorite_border</span>
+          </div>
+          <h3 className="font-bold text-base text-on-surface">No Saved Dossiers</h3>
+          <p className="text-xs text-on-surface-variant">
+            When you analyze a food label, click "Save Favorite" to bookmark its clinical dossier here.
+          </p>
+          <div className="pt-2">
+            <button
+              onClick={() => navigate("/scanner")}
+              className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90 transition-all"
             >
-              {/* 🕒 Date */}
-              <p className="text-label-sm text-on-surface-variant mb-xs">
-                {new Date(item.date).toLocaleString()}
-              </p>
+              Go to Scanner
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {favs.map((item, i) => {
+            const data = item.data || item;
+            const verdict = item.verdict || data?.verdict || "Audited";
+            const id = item.id || `NL-${i + 1}`;
+            const dateStr = item.date || "Past scan";
 
-              {/* 🧠 Summary */}
-              <p className="text-body-md text-on-surface">
-                {item.data?.summary?.safe ||
-                 item.data?.summary?.warning ||
-                 item.data?.summary?.avoid ||
-                 "View Result"}
-              </p>
-
-              {/* ➡️ CTA */}
-              <div className="flex justify-end mt-sm">
-                <span className="text-primary text-label-sm flex items-center gap-xs">
-                  View
-                  <span className="material-symbols-outlined text-[16px]">
-                    arrow_forward
+            return (
+              <div
+                key={i}
+                className="bg-white p-5 rounded-2xl shadow-xs border border-outline-variant/30 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer space-y-3 group"
+                onClick={() => {
+                  if (!data) return;
+                  navigate("/result", {
+                    state: { extractedData: data },
+                  });
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-primary">Dossier #{id}</span>
+                  <span
+                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                      verdict === "Safe"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : verdict === "Caution"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {verdict}
                   </span>
-                </span>
-              </div>
-            </div>
-          ))}
+                </div>
 
+                <p className="text-xs text-on-surface line-clamp-2 leading-relaxed">
+                  {data?.summary?.safe ||
+                    data?.summary?.warning ||
+                    data?.summary?.avoid ||
+                    "Click to view full nutritional breakdown and ingredient evaluation."}
+                </p>
+
+                <div className="flex items-center justify-between pt-2 border-t border-outline-variant/15 text-[11px] text-on-surface-variant">
+                  <span>{dateStr}</span>
+                  <span className="text-primary font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                    <span>Open Dossier</span>
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
