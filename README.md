@@ -7,7 +7,7 @@
 ### Optical Package Recognition · INS Chemical Decoding · Personalized Dietary Risk Auditing · Clinical Dossier Exports
 
 [![Production App](https://img.shields.io/badge/Production%20App-nutrilensfrontend.vercel.app-3525CD?style=for-the-badge&logo=vercel&logoColor=white)](https://nutrilensfrontend.vercel.app/)
-[![Architecture](https://img.shields.io/badge/Architecture-Hybrid%20Edge%2FCloud%20Vision-4F46E5?style=for-the-badge)](#-architecture-deep-dive-resilient-multi-tier-vision-cascade)
+[![Architecture](https://img.shields.io/badge/Architecture-Hybrid%20Edge%2FCloud%20Vision-4F46E5?style=for-the-badge)](#architecture-deep-dive-resilient-multi-tier-vision-cascade)
 [![Python](https://img.shields.io/badge/Python-3.11.9-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
 [![Flask](https://img.shields.io/badge/Flask-3.x-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
@@ -22,13 +22,13 @@
 
 <br/>
 
-[Executive Summary](#-executive-summary) • [Architecture Deep Dive](#-architecture-deep-dive-resilient-multi-tier-vision-cascade) • [System Flow & Sequence](#-system-flow--sequence-diagram) • [Key Capabilities](#-key-capabilities) • [Performance Benchmarks](#-performance--memory-benchmarks) • [API Reference](#-api-reference) • [Local Setup](#-local-development-setup) • [Author](#-engineering--authorship)
+[Executive Summary](#executive-summary) • [Architecture Deep Dive](#architecture-deep-dive-resilient-multi-tier-vision-cascade) • [System Flow & Sequence](#system-flow--sequence-diagram) • [Key Capabilities](#key-capabilities) • [Performance Benchmarks](#performance--memory-benchmarks) • [API Reference](#api-reference) • [Local Setup](#local-development-setup) • [Author](#engineering--authorship)
 
 </div>
 
 ---
 
-## 📌 Executive Summary
+## Executive Summary
 
 Modern consumers face an epidemic of deceptive food labeling: ultra-processed products mask excessive sugars behind 60+ chemical aliases, hide industrial preservatives behind obscure International Numbering System (INS/E) codes, and obscure allergens in minute typography.
 
@@ -38,7 +38,7 @@ Awarded **EX Grade (Highest Honors)** for B.Tech Final Year Capstone.
 
 ---
 
-## 🏗 Architecture Deep Dive: Resilient Multi-Tier Vision Cascade
+## Architecture Deep Dive: Resilient Multi-Tier Vision Cascade
 
 A primary challenge in deploying computer vision models to cloud micro-containers and edge environments is memory density. Deep-learning OCR frameworks such as **PaddleOCR (PP-OCRv4)** load separate detection, orientation classification, and recognition models totaling over 700 MB of system memory. On constrained runtime instances (such as standard 512 MB memory tiers), unmanaged deep learning loads trigger Linux `OOM-killer` signals (`SIGKILL`), causing severe worker crashes and request drops.
 
@@ -93,7 +93,7 @@ flowchart TD
 
 ---
 
-## 🔄 System Flow & Sequence Diagram
+## System Flow & Sequence Diagram
 
 The complete end-to-end lifecycle of a scan request through authentication, vision cascade, clinical reasoning, and persistence:
 
@@ -134,39 +134,39 @@ sequenceDiagram
 
 ---
 
-## ✨ Key Capabilities
+## Key Capabilities
 
-### 📷 1. Dual High-Precision Capture & Crop Pipeline
+### 1. Dual High-Precision Capture & Crop Pipeline
 - **Rear Camera Hardware Integration**: Auto-detects mobile environments to launch native rear lenses (`environment` facing mode).
 - **Interactive Crop Viewport**: Powered by `react-easy-crop` with pixel-perfect aspect ratio locking, rotation, and zoom to isolate curved packaging or low-contrast nutritional tables.
 
-### 🧪 2. INS & E-Number Chemical Decoding
+### 2. INS & E-Number Chemical Decoding
 - Decodes **3,500+ chemical food additives** (INS 100–1500) into plain-language clinical definitions, regulatory statuses, and medical risk assessments:
   - **Preservatives** (INS 200–299): Sodium Benzoate, Potassium Sorbate, Nitrites.
   - **Antioxidants & Acidity Regulators** (INS 300–399): BHA, BHT, TBHQ, Citric Acid.
   - **Emulsifiers & Thickeners** (INS 400–499): Carrageenan, Polysorbate 80, INS 471.
   - **Synthetic Dyes & Flavors** (INS 100–199 / 600+): Tartrazine, Sunset Yellow, MSG.
 
-### 🎯 3. Multi-Constraint Dietary Personalization
+### 3. Multi-Constraint Dietary Personalization
 - Analyzes ingredients against granular health profiles:
   - **Diabetic / Insulin Resistant**: Flags hidden maltodextrin, invert syrups, and high glycemic indices.
   - **Hypertension**: Benchmarks sodium content against WHO `< 2,000mg/day` recommendations.
   - **Allergen Radar**: Early detection for 14 major allergens (peanuts, tree nuts, gluten, soy, milk, sulfites).
   - **Dietary Regimes**: Strict Vegan, Keto, Celiac (Gluten-Free), Halal, and Kosher compliance.
 
-### 📑 4. Server-Side Clinical Export Suite
+### 4. Server-Side Clinical Export Suite
 - **Vector PDF Engine (`ReportLab`)**: Programmatically generates multi-page vector clinical dossiers featuring custom branded palettes, safety metric cards, tabular ingredient listings, and medical disclaimers without fragile headless browser print hacks.
 - **Corporate Word Generator (`python-docx`)**: Generates structured `.docx` reports with formatted tables and color-coded risk callouts for dietitians and healthcare providers.
 
-### 🤖 5. 24/7 Conversational Nutritionist ("Nutrii")
+### 5. 24/7 Conversational Nutritionist ("Nutrii")
 - Multimodal conversational agent capable of streaming clinical dietary advice, answering follow-up queries regarding scanned labels, and recommending whole-food supermarket alternatives.
 
-### 🔐 6. Enterprise RBAC & Admin Governance Console
+### 6. Enterprise RBAC & Admin Governance Console
 - Full administrative management (`/admin`) featuring live scan quota monitoring, tier elevations (Free vs. Unlimited Admin), dynamic account suspensions, and encrypted user data isolation.
 
 ---
 
-## ⚡ Performance & Memory Benchmarks
+## Performance & Memory Benchmarks
 
 | Metric | Traditional PaddleOCR (Local) | NutriLens Zero-RAM Cloud Vision | Architectural Benefit |
 |---|---|---|---|
@@ -178,7 +178,7 @@ sequenceDiagram
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Domain | Technologies & Libraries |
 |---|---|
@@ -194,7 +194,7 @@ sequenceDiagram
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 All protected endpoints require a valid Bearer token header:
 ```http
@@ -274,7 +274,7 @@ Authorization: Bearer <jwt_token>
 
 ---
 
-## 💻 Local Development Setup
+## Local Development Setup
 
 ### Prerequisites
 - **Python 3.11.9** (Recommended for compatibility across NumPy, OpenCV, and ReportLab)
@@ -337,7 +337,7 @@ npm run dev
 
 ---
 
-## 🔒 Security & Privacy Engineering
+## Security & Privacy Engineering
 
 - **Zero-Storage Camera Mode**: Image crops are analyzed in-memory or securely streamed to cloud vision endpoints; temporary visual files are sanitized and discarded after session execution.
 - **Fail-Safe Telemetry**: Non-critical secondary operations (audit logging, welcome email delivery, notifications) are wrapped in isolated fault-tolerant exception handlers to guarantee that primary scan workflows never fail.
@@ -347,7 +347,7 @@ npm run dev
 
 ---
 
-## 👨‍💻 Engineering & Authorship
+## Engineering & Authorship
 
 **Tushar Aradwad**  
 *Full Stack & Applied AI Engineer*  
@@ -356,7 +356,7 @@ npm run dev
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the terms of the **MIT License**. See the [LICENSE](/LICENSE) file for complete details.
 
