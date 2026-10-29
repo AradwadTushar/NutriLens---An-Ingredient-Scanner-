@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://nutrilens-backend.onrender.com/$1"
+      "destination": "https://nutrilens-backend-6mhe.onrender.com/$1"
     },
     {
       "source": "/(.*)",

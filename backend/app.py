@@ -115,10 +115,14 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ocr_model = None
 if PaddleOCR is not None:
     try:
-        ocr_model = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=False)
+        ocr_model = PaddleOCR(use_angle_cls=True, lang='en')
         print("[OK] PaddleOCR initialized successfully")
-    except Exception as e:
-        print("[WARN] PaddleOCR initialization skipped or failed:", e)
+    except Exception:
+        try:
+            ocr_model = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=False)
+            print("[OK] PaddleOCR initialized successfully")
+        except Exception as e:
+            print("[WARN] PaddleOCR initialization skipped or failed:", e)
 else:
     print("[INFO] PaddleOCR not installed in environment; using high-speed Cloud Vision engine")
 
