@@ -30,7 +30,10 @@ import bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_mail import Mail, Message
 from werkzeug.utils import secure_filename
-from paddleocr import PaddleOCR
+try:
+    from paddleocr import PaddleOCR
+except ImportError:
+    PaddleOCR = None
 import openai
 import google.generativeai as genai
 
@@ -110,11 +113,14 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # OCR & AI Setup with Fail-Safe Cloud Fallback
 ocr_model = None
-try:
-    ocr_model = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=False)
-    print("[OK] PaddleOCR initialized successfully")
-except Exception as e:
-    print("[WARN] PaddleOCR initialization skipped or failed (will use Gemini 2.5 Flash Vision OCR fallback):", e)
+if PaddleOCR is not None:
+    try:
+        ocr_model = PaddleOCR(use_angle_cls=True, lang='en', use_gpu=False)
+        print("[OK] PaddleOCR initialized successfully")
+    except Exception as e:
+        print("[WARN] PaddleOCR initialization skipped or failed:", e)
+else:
+    print("[INFO] PaddleOCR not installed in environment; using high-speed Cloud Vision engine")
 
 def warmup_ocr():
     if not ocr_model:
