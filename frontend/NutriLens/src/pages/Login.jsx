@@ -40,6 +40,18 @@ export default function Login({ setIsLoggedIn }) {
       }
 
       localStorage.setItem("token", data.token);
+      const profile = {
+        email: data.email || formData.email,
+        role: data.role || "user",
+        scansLimit: data.scansLimit,
+        scansUsed: data.scansUsed ?? 0,
+        scansRemaining: data.role === "admin" ? -1 : (data.scansRemaining ?? Math.max(0, (data.scansLimit || 2) - (data.scansUsed || 0))),
+      };
+      try {
+        localStorage.setItem("user_profile", JSON.stringify(profile));
+      } catch (e) {
+        console.error("Failed to store profile on login:", e);
+      }
       setIsLoggedIn(true);
       navigate("/landing");
     } catch (err) {

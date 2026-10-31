@@ -6,7 +6,14 @@ const Navbar = ({ isLoggedIn, setIsLoggedIn, setShowChatbot }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const cached = localStorage.getItem("user_profile");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Fetch current user quota & role
   useEffect(() => {
@@ -26,6 +33,7 @@ const Navbar = ({ isLoggedIn, setIsLoggedIn, setShowChatbot }) => {
 
         if (res.status === 401) {
           localStorage.removeItem("token");
+          localStorage.removeItem("user_profile");
           setIsLoggedIn(false);
           navigate("/login");
           return;
@@ -34,6 +42,11 @@ const Navbar = ({ isLoggedIn, setIsLoggedIn, setShowChatbot }) => {
         if (res.ok) {
           const data = await res.json();
           setUserProfile(data);
+          try {
+            localStorage.setItem("user_profile", JSON.stringify(data));
+          } catch (e) {
+            console.error("Failed to cache user profile in Navbar:", e);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch user profile in Navbar:", err);
@@ -45,6 +58,7 @@ const Navbar = ({ isLoggedIn, setIsLoggedIn, setShowChatbot }) => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user_profile");
     setIsLoggedIn(false);
     setMenuOpen(false);
     setProfileOpen(false);
@@ -92,7 +106,16 @@ const Navbar = ({ isLoggedIn, setIsLoggedIn, setShowChatbot }) => {
       );
     }
 
-    const remaining = userProfile?.scansRemaining ?? 2;
+    if (!userProfile) {
+      return (
+        <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200/60 animate-pulse">
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+          <span>Verifying access...</span>
+        </div>
+      );
+    }
+
+    const remaining = userProfile?.scansRemaining ?? 0;
     const limit = userProfile?.scansLimit ?? 2;
     const isExhausted = remaining <= 0;
 
@@ -211,14 +234,16 @@ const Navbar = ({ isLoggedIn, setIsLoggedIn, setShowChatbot }) => {
                               className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                                 isAdmin
                                   ? "bg-purple-100 text-purple-700"
+                                  : !userProfile
+                                  ? "bg-slate-100 text-slate-700"
                                   : "bg-emerald-100 text-emerald-800"
                               }`}
                             >
-                              {isAdmin ? "Admin Account" : "Free Preview Tier"}
+                              {isAdmin ? "Admin Account" : !userProfile ? "Loading..." : "Free Preview Tier"}
                             </span>
-                            {!isAdmin && (
+                            {!isAdmin && userProfile && (
                               <span className="text-[11px] text-on-surface-variant font-medium">
-                                {userProfile?.scansRemaining ?? 2} left
+                                {userProfile?.scansRemaining ?? 0} left
                               </span>
                             )}
                           </div>
@@ -376,10 +401,16 @@ const Navbar = ({ isLoggedIn, setIsLoggedIn, setShowChatbot }) => {
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     isAdmin
                       ? "bg-purple-100 text-purple-700"
+                      : !userProfile
+                      ? "bg-slate-100 text-slate-700"
                       : "bg-emerald-100 text-emerald-800"
                   }`}
                 >
-                  {isAdmin ? "Admin • Unlimited" : `${userProfile?.scansRemaining ?? 2} Scans Left`}
+                  {isAdmin
+                    ? "Admin • Unlimited"
+                    : !userProfile
+                    ? "Verifying access..."
+                    : `${userProfile?.scansRemaining ?? 0} Scans Left`}
                 </span>
               </div>
             </div>

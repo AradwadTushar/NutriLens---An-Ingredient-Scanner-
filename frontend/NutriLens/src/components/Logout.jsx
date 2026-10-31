@@ -20,8 +20,9 @@ const Logout = ({ setIsLoggedIn }) => {
         }
       }
 
-      // Clear token & state regardless
+      // Clear token & cached profile state regardless
       localStorage.removeItem('token');
+      localStorage.removeItem('user_profile');
       setIsLoggedIn(false);
       setMessage('Logout Successful!');
       setTimeout(() => navigate('/'), 1500);

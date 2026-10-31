@@ -56,6 +56,18 @@ export default function Register({ setIsLoggedIn }) {
       if (res.status === 201) {
         if (data.token) {
           localStorage.setItem("token", data.token);
+          const profile = {
+            email: formData.email,
+            role: data.role || "user",
+            scansLimit: data.scansLimit || 2,
+            scansUsed: 0,
+            scansRemaining: data.role === "admin" ? -1 : (data.scansLimit || 2),
+          };
+          try {
+            localStorage.setItem("user_profile", JSON.stringify(profile));
+          } catch (e) {
+            console.error("Failed to store profile on register:", e);
+          }
           setIsLoggedIn(true);
         }
         navigate("/landing");

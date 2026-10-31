@@ -6,7 +6,14 @@ import ProductTour from "../components/ui/ProductTour";
 
 export default function Landing() {
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState(null);
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const cached = localStorage.getItem("user_profile");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [recentFavorites, setRecentFavorites] = useState([]);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
@@ -19,7 +26,14 @@ export default function Landing() {
       })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          if (data) setUserProfile(data);
+          if (data) {
+            setUserProfile(data);
+            try {
+              localStorage.setItem("user_profile", JSON.stringify(data));
+            } catch (e) {
+              console.error("Failed to cache user profile in Landing:", e);
+            }
+          }
         })
         .catch((err) => console.error("Dashboard profile fetch error:", err));
     }
@@ -41,7 +55,7 @@ export default function Landing() {
   };
 
   const isAdmin = userProfile?.role === "admin";
-  const scansRemaining = userProfile?.scansRemaining ?? 2;
+  const scansRemaining = userProfile?.scansRemaining;
   const scansLimit = userProfile?.scansLimit ?? 2;
 
   // Onboarding Guided Tour Steps
@@ -124,25 +138,31 @@ export default function Landing() {
                 className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                   isAdmin
                     ? "bg-purple-100 text-purple-700"
-                    : scansRemaining <= 0
+                    : !userProfile
+                    ? "bg-slate-100 text-slate-700"
+                    : (scansRemaining ?? 0) <= 0
                     ? "bg-red-100 text-red-700"
                     : "bg-emerald-100 text-emerald-800"
                 }`}
               >
                 <span className="material-symbols-outlined text-[20px]">
-                  {isAdmin ? "admin_panel_settings" : scansRemaining <= 0 ? "lock" : "bolt"}
+                  {isAdmin ? "admin_panel_settings" : !userProfile ? "hourglass_empty" : (scansRemaining ?? 0) <= 0 ? "lock" : "bolt"}
                 </span>
               </div>
               <div>
                 <p className="text-xs font-bold text-on-surface">
                   {isAdmin
                     ? "Admin Plan (Unlimited)"
-                    : `${scansRemaining} of ${scansLimit} Scans Remaining`}
+                    : !userProfile
+                    ? "Loading Account Tier..."
+                    : `${scansRemaining ?? 0} of ${scansLimit} Scans Remaining`}
                 </p>
                 <p className="text-[11px] text-on-surface-variant">
                   {isAdmin
                     ? "Full administrative privileges"
-                    : scansRemaining <= 0
+                    : !userProfile
+                    ? "Syncing quota details..."
+                    : (scansRemaining ?? 0) <= 0
                     ? "Quota reached. Top up to scan."
                     : "Complimentary preview tier"}
                 </p>

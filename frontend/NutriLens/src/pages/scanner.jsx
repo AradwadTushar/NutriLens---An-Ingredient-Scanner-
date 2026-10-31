@@ -26,7 +26,14 @@ export default function Scanner() {
   const [aspect, setAspect] = useState(4 / 3);
   const [activeTab, setActiveTab] = useState("upload"); // "upload" | "camera"
   const [showQuotaModal, setShowQuotaModal] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const cached = localStorage.getItem("user_profile");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -39,7 +46,14 @@ export default function Scanner() {
     fetch("/api/me", { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data) setUserProfile(data);
+        if (data) {
+          setUserProfile(data);
+          try {
+            localStorage.setItem("user_profile", JSON.stringify(data));
+          } catch (e) {
+            console.error(e);
+          }
+        }
       })
       .catch((err) => console.error("Scanner quota check failed:", err));
   }, []);

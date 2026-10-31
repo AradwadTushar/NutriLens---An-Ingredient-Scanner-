@@ -64,8 +64,16 @@ mail = Mail(app)
 
 jwt = JWTManager(app)
 
-# Role & Quota Config
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "aradwadtushar72@gmail.com").strip().lower()
+# Role & Quota Config - Support multiple admin emails and case-insensitivity
+_default_admins = "aradwadtushar72@gmail.com,aradwadtushar29@gmail.com,aradwadtushar2004@gmail.com,admin2905@gmail.com"
+_raw_admins = os.getenv("ADMIN_EMAIL", _default_admins)
+ADMIN_EMAILS = {e.strip().lower() for e in _raw_admins.split(",") if e.strip()}
+ADMIN_EMAILS.update({
+    "aradwadtushar72@gmail.com",
+    "aradwadtushar29@gmail.com",
+    "aradwadtushar2004@gmail.com",
+    "admin2905@gmail.com"
+})
 
 def get_user_quota(user_email):
     if not user_email or getattr(mongo, 'db', None) is None:
@@ -76,11 +84,18 @@ def get_user_quota(user_email):
         return None, None
 
     email_clean = user.get('email', '').strip().lower()
-    is_admin = (email_clean == ADMIN_EMAIL or user.get('role') == 'admin')
+    is_admin = (email_clean in ADMIN_EMAILS or user.get('role') == 'admin')
     role = 'admin' if is_admin else user.get('role', 'user')
     scans_limit = -1 if role == 'admin' else user.get('scansLimit', 2)
     scans_used = user.get('scansUsed', 0)
     scans_remaining = -1 if role == 'admin' else max(0, scans_limit - scans_used)
+
+    # Auto-heal admin role in DB if missing or outdated
+    if is_admin and (user.get('role') != 'admin' or user.get('scansLimit') != -1):
+        try:
+            users.update_one({'_id': user['_id']}, {'$set': {'role': 'admin', 'scansLimit': -1}})
+        except Exception as e:
+            print("[WARN] Failed to auto-heal admin role in DB:", e)
 
     quota_info = {
         'role': role,
@@ -254,7 +269,7 @@ def userRegister():
     hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     token = create_access_token(identity=email)
 
-    is_admin = (email == ADMIN_EMAIL)
+    is_admin = (email.strip().lower() in ADMIN_EMAILS)
     role = 'admin' if is_admin else 'user'
     scans_limit = -1 if is_admin else 2
 
@@ -302,16 +317,26 @@ def userLogin():
         token = create_access_token(identity=user['email'])
         users.update_one({'_id': user['_id']}, {'$push': {'tokens': {'token': token}}})
 
-        is_admin = (user.get('email', '').strip().lower() == ADMIN_EMAIL or user.get('role') == 'admin')
+        email_clean = user.get('email', '').strip().lower()
+        is_admin = (email_clean in ADMIN_EMAILS or user.get('role') == 'admin')
         role = 'admin' if is_admin else user.get('role', 'user')
         scans_limit = -1 if role == 'admin' else user.get('scansLimit', 2)
         scans_used = user.get('scansUsed', 0)
+
+        # Auto-heal admin role in DB upon login
+        if is_admin and (user.get('role') != 'admin' or user.get('scansLimit') != -1):
+            try:
+                users.update_one({'_id': user['_id']}, {'$set': {'role': 'admin', 'scansLimit': -1}})
+            except Exception as e:
+                print("[WARN] Failed to auto-heal admin role on login:", e)
 
         return jsonify(
             token=token,
             role=role,
             scansUsed=scans_used,
             scansLimit=scans_limit,
+            scansRemaining=(-1 if role == 'admin' else max(0, scans_limit - scans_used)),
+            email=user.get('email'),
             message='Login Successful'
         ), 201
 
@@ -330,6 +355,7 @@ def userLogout():
     return jsonify(message='Logout Failed'), 401
 
 @app.route('/me', methods=['GET'])
+@app.route('/api/me', methods=['GET'])
 @jwt_required()
 def get_current_user_profile():
     current_user_email = get_jwt_identity()
@@ -825,6 +851,7 @@ def check_admin_access():
     return user, None
 
 @app.route('/admin/users', methods=['GET'])
+@app.route('/api/admin/users', methods=['GET'])
 @jwt_required()
 def admin_get_users():
     _, err = check_admin_access()
@@ -835,7 +862,7 @@ def admin_get_users():
     user_list = []
     for u in users_cursor:
         u_email = u.get('email', '')
-        u_is_admin = (u_email.strip().lower() == ADMIN_EMAIL or u.get('role') == 'admin')
+        u_is_admin = (u_email.strip().lower() in ADMIN_EMAILS or u.get('role') == 'admin')
         u_role = 'admin' if u_is_admin else u.get('role', 'user')
         u_limit = -1 if u_role == 'admin' else u.get('scansLimit', 2)
         u_used = u.get('scansUsed', 0)
@@ -854,6 +881,7 @@ def admin_get_users():
     return jsonify({'users': user_list, 'count': len(user_list)}), 200
 
 @app.route('/admin/users/<email>/reset-quota', methods=['POST'])
+@app.route('/api/admin/users/<email>/reset-quota', methods=['POST'])
 @jwt_required()
 def admin_reset_user_quota(email):
     _, err = check_admin_access()
