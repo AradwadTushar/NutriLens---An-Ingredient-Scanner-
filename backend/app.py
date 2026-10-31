@@ -64,16 +64,8 @@ mail = Mail(app)
 
 jwt = JWTManager(app)
 
-# Role & Quota Config - Support multiple admin emails and case-insensitivity
-_default_admins = "aradwadtushar72@gmail.com,aradwadtushar29@gmail.com,aradwadtushar2004@gmail.com,admin2905@gmail.com"
-_raw_admins = os.getenv("ADMIN_EMAIL", _default_admins)
-ADMIN_EMAILS = {e.strip().lower() for e in _raw_admins.split(",") if e.strip()}
-ADMIN_EMAILS.update({
-    "aradwadtushar72@gmail.com",
-    "aradwadtushar29@gmail.com",
-    "aradwadtushar2004@gmail.com",
-    "admin2905@gmail.com"
-})
+# Role & Quota Config - Zero Hardcoded Emails (Pure Environment & DB Driven)
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").strip().lower()
 
 def get_user_quota(user_email):
     if not user_email or getattr(mongo, 'db', None) is None:
@@ -84,7 +76,7 @@ def get_user_quota(user_email):
         return None, None
 
     email_clean = user.get('email', '').strip().lower()
-    is_admin = (email_clean in ADMIN_EMAILS or user.get('role') == 'admin')
+    is_admin = bool(ADMIN_EMAIL and email_clean == ADMIN_EMAIL) or (user.get('role') == 'admin')
     role = 'admin' if is_admin else user.get('role', 'user')
     scans_limit = -1 if role == 'admin' else user.get('scansLimit', 2)
     scans_used = user.get('scansUsed', 0)
@@ -269,7 +261,7 @@ def userRegister():
     hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     token = create_access_token(identity=email)
 
-    is_admin = (email.strip().lower() in ADMIN_EMAILS)
+    is_admin = bool(ADMIN_EMAIL and email.strip().lower() == ADMIN_EMAIL)
     role = 'admin' if is_admin else 'user'
     scans_limit = -1 if is_admin else 2
 
@@ -318,7 +310,7 @@ def userLogin():
         users.update_one({'_id': user['_id']}, {'$push': {'tokens': {'token': token}}})
 
         email_clean = user.get('email', '').strip().lower()
-        is_admin = (email_clean in ADMIN_EMAILS or user.get('role') == 'admin')
+        is_admin = bool(ADMIN_EMAIL and email_clean == ADMIN_EMAIL) or (user.get('role') == 'admin')
         role = 'admin' if is_admin else user.get('role', 'user')
         scans_limit = -1 if role == 'admin' else user.get('scansLimit', 2)
         scans_used = user.get('scansUsed', 0)
@@ -862,7 +854,7 @@ def admin_get_users():
     user_list = []
     for u in users_cursor:
         u_email = u.get('email', '')
-        u_is_admin = (u_email.strip().lower() in ADMIN_EMAILS or u.get('role') == 'admin')
+        u_is_admin = bool(ADMIN_EMAIL and u_email.strip().lower() == ADMIN_EMAIL) or (u.get('role') == 'admin')
         u_role = 'admin' if u_is_admin else u.get('role', 'user')
         u_limit = -1 if u_role == 'admin' else u.get('scansLimit', 2)
         u_used = u.get('scansUsed', 0)
